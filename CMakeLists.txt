@@ -47,11 +47,18 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    Drivers/LED/led.c
+    Drivers/ring_buffer/ring_buffer.c
+    Drivers/ssd1306/ssd1306.c
+    Drivers/ssd1306/ssd1306_fonts.c
     # Add user sources here
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    Drivers/LED
+    Drivers/ring_buffer
+    Drivers/ssd1306
     # Add user defined include paths
 )
 
