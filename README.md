@@ -1,6 +1,7 @@
 # Proyecto Final: Sistema de Control de Acceso y Climatización Remoto
 
 **Curso:** Estructuras Computacionales (4100901)
+
 **Universidad Nacional de Colombia - Sede Manizales**
 
 ## 1. Resumen del Proyecto
@@ -14,7 +15,7 @@ Este proyecto consolida los conocimientos del semestre, desde el uso de la capa 
 ### 2.1 Control de Acceso por Teclado
 *   El sistema debe permitir el ingreso de una clave de 4 dígitos mediante un teclado matricial.
 *   Si la clave es correcta, un LED (simulador de cerradura) se enciende y el estado se muestra en la pantalla OLED.
-*   Si la clave es incorrecta, se debe indicar el error en la pantalla.
+*   Si la clave es incorrecta, se debe indicar el error en la pantalla y enviar una alerta a internet.
 
 ### 2.2 Interfaz de Usuario (Display OLED)
 *   La pantalla OLED es la interfaz visual principal.
@@ -69,52 +70,6 @@ El diseño del firmware es crucial. Deben explicar y justificar su diseño.
 
 *   **Diagrama de Componentes de Software:** Deben crear un diagrama que muestre la interacción entre los módulos.
 
-```mermaid
-graph TD
-    subgraph "Hardware/External"
-        hw_pc[PC Console]
-        hw_wifi[WiFi TCP Client]
-        hw_esp[ESP-01]
-        hw_keypad[Keypad]
-    end
-
-    subgraph "Firmware"
-        main["main.c (Super Loop + State Machine)"]
-        parser["Command Parser"]
-        
-        subgraph "Drivers"
-            keypad_drv["Keypad Driver"]
-            oled_drv["OLED Driver"]
-            temp_drv["Temp Sensor Driver"]
-            fan_drv["Fan PWM Driver"]
-        end
-
-        subgraph "Core Libs & HAL"
-            usart2["USART2 (VCP)"]
-            usart3["USART3 (ESP01)"]
-            rb2[Ring Buffer]
-            rb3[Ring Buffer]
-            hal[STM32 HAL]
-        end
-    end
-
-    hw_pc --> usart2
-    hw_wifi --> hw_esp --> usart3
-    hw_keypad --> keypad_drv
-
-    usart2 --> rb2 --> parser
-    usart3 --> rb3 --> parser
-    keypad_drv --> main
-
-    parser --> main
-    
-    main --> oled_drv
-    main --> temp_drv
-    main --> fan_drv
-    
-    keypad_drv & oled_drv & temp_drv & fan_drv --> hal
-```
-
 ## 4. Entregables y Criterios de Evaluación
 
 ### Entregables
@@ -125,8 +80,8 @@ graph TD
     *   **Arquitectura de Firmware:** Explicación de los patrones de diseño (Super Loop, State Machine) y diagrama de componentes.
     *   **Protocolo de Comandos:** Descripción de los comandos remotos implementados.
     *   **Optimización:** Explicación de las técnicas de optimización aplicadas.
-3.  **Video Demostración:** Video corto (máx. 3 minutos) mostrando el sistema en funcionamiento.
-4.  **Presentación Final:** Una breve presentación (5-7 minutos) del proyecto a los compañeros del curso, explicando la arquitectura y demostrando su funcionamiento.
+3.  **Presentación Final:** Una breve presentación (5-7 minutos) del proyecto a los compañeros del curso, explicando la arquitectura y demostrando su funcionamiento.
+4.  **Video Demostración(Opcional):** Video corto (máx. 3 minutos) mostrando el sistema en funcionamiento.
 
 ### Criterios de Evaluación
 | Criterio | Descripción | Ponderación |
