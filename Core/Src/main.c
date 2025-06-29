@@ -22,7 +22,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led.h"
+#include "keypad.h"
 #include "ring_buffer.h"
+#include "room_control.h"
+#include <stdio.h>
+
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
 
@@ -46,6 +50,9 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim3;
+DMA_HandleTypeDef hdma_tim3_ch1_trig;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -57,13 +64,31 @@ led_handle_t heartbeat_led = {
 };
 
 uint8_t usart_2_rxbyte = 0; // Variable to hold received byte from UART3
+
+keypad_handle_t keypad = {
+    .row_ports = {KEYPAD_R1_GPIO_Port, KEYPAD_R2_GPIO_Port, KEYPAD_R3_GPIO_Port, KEYPAD_R4_GPIO_Port},
+    .row_pins  = {KEYPAD_R1_Pin, KEYPAD_R2_Pin, KEYPAD_R3_Pin, KEYPAD_R4_Pin},
+    .col_ports = {KEYPAD_C1_GPIO_Port, KEYPAD_C2_GPIO_Port, KEYPAD_C3_GPIO_Port, KEYPAD_C4_GPIO_Port},
+    .col_pins  = {KEYPAD_C1_Pin, KEYPAD_C2_Pin, KEYPAD_C3_Pin, KEYPAD_C4_Pin}
+};
+
+#define KEYPAD_BUFFER_LEN 16
+uint8_t keypad_buffer[KEYPAD_BUFFER_LEN];
+ring_buffer_t keypad_rb;
+
+volatile uint16_t keypad_interrupt_pin = 0;
+
+// Room control system instance
+room_control_t room_system;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -74,6 +99,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == B1_Pin) {
     button_pressed = 1; // Set the flag when the button is pressed
+  } else {
+    keypad_interrupt_pin = GPIO_Pin;
   }
 }
 
@@ -92,6 +119,14 @@ void heartbeat(void)
     led_toggle(&heartbeat_led); // Toggle the heartbeat LED
     last_toggle = HAL_GetTick();
   }
+}
+
+void write_to_oled(char *message, SSD1306_COLOR color, uint8_t x, uint8_t y)
+{
+  ssd1306_Fill(Black); // Clear the display
+  ssd1306_SetCursor(x, y); // Set cursor to the specified position
+  ssd1306_WriteString(message, Font_7x10, color);
+  ssd1306_UpdateScreen(); // Update the display to show the message
 }
 
 /* USER CODE END 0 */
@@ -125,12 +160,20 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   led_init(&heartbeat_led);
   ssd1306_Init();
   HAL_UART_Receive_IT(&huart2, &usart_2_rxbyte, 1);
+  
+  ring_buffer_init(&keypad_rb, keypad_buffer, KEYPAD_BUFFER_LEN);
+  keypad_init(&keypad);
+  
+  // TODO: TAREA - Descomentar cuando implementen la lógica del sistema
+  // room_control_init(&room_system);
 
   /* USER CODE END 2 */
 
@@ -146,25 +189,39 @@ int main(void)
   while (1) {
     heartbeat(); // Call the heartbeat function to toggle the LED
 
+    // TODO: TAREA - Descomentar cuando implementen la máquina de estados
+    // room_control_update(&room_system);
+
+    // DEMO: Keypad functionality - Remove when implementing room control logic
+    if (keypad_interrupt_pin != 0) {
+      char key = keypad_scan(&keypad, keypad_interrupt_pin);
+      if (key != '\0') {
+        write_to_oled(&key, White, 31, 31);
+        
+        // TODO: TAREA - Descomentar para enviar teclas al sistema de control
+        // room_control_process_key(&room_system, key);
+      }
+      keypad_interrupt_pin = 0;
+    }
+
+    // DEMO: Button functionality - Remove when implementing room control logic  
     if (button_pressed) {
-      // If the button is pressed, display a message on the OLED
-      ssd1306_Fill(Black); // Clear the display
-      ssd1306_SetCursor(17, 17); // Set cursor to the center
-      ssd1306_WriteString("Pressed!", Font_7x10, White);
-      ssd1306_UpdateScreen(); // Update the display to show the message
-      HAL_Delay(1000); // Wait for 1 second to show the message
-      ssd1306_Fill(Black); // Clear the display again
-      ssd1306_UpdateScreen(); // Update the display to clear the message
+      write_to_oled("Button Pressed!", White, 17, 17); // Display message on OLED
       button_pressed = 0; // Reset the flag
     }
+
+    // DEMO: UART functionality - Remove when implementing room control logic
     if (usart_2_rxbyte != 0) {
-      // If a byte is received from USART2, display it on the OLED
-      ssd1306_Fill(Black); // Clear the display
-      ssd1306_SetCursor(17, 17); // Set cursor to the top left corner
-      ssd1306_WriteString((char *)&usart_2_rxbyte, Font_7x10, White);
-      ssd1306_UpdateScreen(); // Update the display to show the received byte
+      write_to_oled((char *)&usart_2_rxbyte, White, 31, 31); // Display received byte on OLED
       usart_2_rxbyte = 0; // Reset the received byte variable
     }
+
+    // TODO: TAREA - Implementar procesamiento de comandos remotos
+    // command_parser_process(); // Procesar comandos de UART2 y UART3
+    
+    // TODO: TAREA - Leer sensor de temperatura y actualizar sistema
+    // float temperature = temperature_sensor_read();
+    // room_control_set_temperature(&room_system, temperature);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -270,6 +327,55 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 8000 - 1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 100 - 1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -305,6 +411,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -322,7 +444,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LD2_Pin|KEYPAD_R1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, DOOR_STATUS_Pin|LD2_Pin|KEYPAD_R1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, KEYPAD_R2_Pin|KEYPAD_R4_Pin|KEYPAD_R3_Pin, GPIO_PIN_RESET);
@@ -333,8 +455,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD2_Pin KEYPAD_R1_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin|KEYPAD_R1_Pin;
+  /*Configure GPIO pins : DOOR_STATUS_Pin LD2_Pin KEYPAD_R1_Pin */
+  GPIO_InitStruct.Pin = DOOR_STATUS_Pin|LD2_Pin|KEYPAD_R1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
