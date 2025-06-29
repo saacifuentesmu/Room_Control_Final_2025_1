@@ -81,6 +81,7 @@ void room_control_update(room_control_t *room) {
         case ROOM_STATE_ACCESS_DENIED:
             // TODO: TAREA - Implementar lógica de acceso denegado
             // - Mostrar "ACCESO DENEGADO" durante 3 segundos
+            // - Enviar alerta a internet via ESP-01 (nuevo requerimiento)
             // - Volver automáticamente a LOCKED
             
             if (current_time - room->state_enter_time > ACCESS_DENIED_TIMEOUT_MS) {
