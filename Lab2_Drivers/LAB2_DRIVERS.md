@@ -68,18 +68,10 @@ En esta parte mediremos y compararemos la latencia de comunicación entre dos pr
 ### 2.1 Preparación del Sistema
 
 1.  **Configuración USB (ST-Link):**
-    * El código en `main.c` ya maneja UART2 (ST-Link) en las líneas 213-217:
-    ```c
-    // DEMO: UART functionality - Remove when implementing room control logic
-    if (usart_2_rxbyte != 0) {
-      write_to_oled((char *)&usart_2_rxbyte, White, 31, 31);
-      usart_2_rxbyte = 0;
-    }
-    ```
-    * **NO necesitas modificar este código** - funciona tal como está.
+    * El código en `main.c` ya maneja UART2 (ST-Link).
 
 2.  **Configuración ESP01:**
-    * Si tienes ESP01 configurado, debe estar conectado a USART3 (opcionalmente a USART2 para el lab).
+    * Si tienes ESP01 configurado, debe estar conectado a USART3 (opcionalmente al mismo Tx de USART2 para el lab).
     * El módulo debe tener firmware `esp-link` para actuar como puente UART-WiFi.
 
 3.  **Preparación del Script:**
