@@ -138,40 +138,6 @@ cd Room_Control_Final_2025_1
 - Implementar parser de comandos
 - Probar comunicación remota
 
-### **3. Archivos Principales a Modificar**
-
-#### **`Core/Src/room_control.c`**
-```c
-// TODO: Implementar estas funciones
-room_control_state_t room_control_process_key(char key);
-void room_control_update_fan(void);
-void room_control_parse_command(char* command);
-```
-
-#### **`Core/Inc/room_control.h`**
-```c
-// Verificar definiciones de estados y constantes
-```
-
----
-
-### **Funciones Clave:**
-```c
-// Keypad
-char keypad_scan(void);
-
-// OLED
-void ssd1306_WriteString(char* str, FontDef Font, SSD1306_COLOR color);
-void ssd1306_UpdateScreen(void);
-
-// LED
-void led_on(void);
-void led_off(void);
-
-// PWM
-void __HAL_TIM_SET_COMPARE(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t Compare);
-```
-
 ---
 
 ## 🎯 Entregables
@@ -187,7 +153,7 @@ void __HAL_TIM_SET_COMPARE(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t C
 
 ### **Formato de Entrega:**
 - **Repositorio Git** con todos los cambios
-- **Presentación oral** (5 minutos) explicando implementación
+- **Presentación oral** (3 minutos) explicando implementación
 - **Código ejecutándose** en tiempo real en la placa
 
 ---
@@ -205,7 +171,7 @@ void __HAL_TIM_SET_COMPARE(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t C
 ## 🏆 Consejos para el Éxito
 
 ### **Gestión del Tiempo:**
-- Dedica 30 min iniciales a entender el código existente
+- Dedica 30 min iniciales a entender las instrucciones
 - Implementa funcionalidad básica antes de optimizar
 - Deja tiempo para pruebas e integración
 

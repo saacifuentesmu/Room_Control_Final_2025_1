@@ -129,6 +129,16 @@ void write_to_oled(char *message, SSD1306_COLOR color, uint8_t x, uint8_t y)
   ssd1306_UpdateScreen(); // Update the display to show the message
 }
 
+/**
+ * @brief  Write a character to the UART using printf().
+*/
+int _write(int file, char *ptr, int len)
+{
+  (void)file;
+  HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+  return len;
+}
+
 /* USER CODE END 0 */
 
 /**
